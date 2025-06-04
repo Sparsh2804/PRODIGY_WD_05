@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .dropdown-section label {
+            color: #555;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .location-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+        }
+
+        .weather-display {
+            margin-top: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px;
+            color: white;
+            display: none;
+        }
+
+        .weather-display.show {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .location-name {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .temperature {
+            font-size: 4em;
+            font-weight: 300;
+            margin: 20px 0;
+        }
+
+        .description {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            text-transform: capitalize;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .detail-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .temperature {
+                font-size: 3em;
+            }
+            
+            .weather-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather Dashboard</h1>
+        
+        <div class="search-section">
+            <div class="input-group">
+                <input type="text" id="locationInput" placeholder="Enter city name (e.g., Mumbai, Delhi)">
+                <button onclick="searchWeather()">Search</button>
+            </div>
+            
+            <div class="dropdown-section" style="margin: 15px 0;">
+                <label for="indianCities" style="display: block; margin-bottom: 10px; color: #333; font-weight: 500;">Or select an Indian city:</label>
+                <select id="indianCities" onchange="selectIndianCity()" style="width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; background: white; cursor: pointer;">
+                    <option value="">Choose a city...</option>
+                    <option value="Agra">Agra, Uttar Pradesh</option>
+                    <option value="Ahmedabad">Ahmedabad, Gujarat</option>
+                    <option value="Aligarh">Aligarh, Uttar Pradesh</option>
+                    <option value="Allahabad">Allahabad, Uttar Pradesh</option>
+                    <option value="Amritsar">Amritsar, Punjab</option>
+                    <option value="Aurangabad">Aurangabad, Maharashtra</option>
+                    <option value="Bangalore">Bangalore, Karnataka</option>
+                    <option value="Bareilly">Bareilly, Uttar Pradesh</option>
+                    <option value="Bhopal">Bhopal, Madhya Pradesh</option>
+                    <option value="Bhubaneswar">Bhubaneswar, Odisha</option>
+                    <option value="Chandigarh">Chandigarh</option>
+                    <option value="Chennai">Chennai, Tamil Nadu</option>
+                    <option value="Cochin">Cochin, Kerala</option>
+                    <option value="Coimbatore">Coimbatore, Tamil Nadu</option>
+                    <option value="Dehradun">Dehradun, Uttarakhand</option>
+                    <option value="Delhi">New Delhi, Delhi</option>
+                    <option value="Durg">Durg, Chhattisgarh</option>
+                    <option value="Faridabad">Faridabad, Haryana</option>
+                    <option value="Firozabad">Firozabad, Uttar Pradesh</option>
+                    <option value="Ghaziabad">Ghaziabad, Uttar Pradesh</option>
+                    <option value="Guntur">Guntur, Andhra Pradesh</option>
+                    <option value="Gurgaon">Gurgaon, Haryana</option>
+                    <option value="Guwahati">Guwahati, Assam</option>
+                    <option value="Gwalior">Gwalior, Madhya Pradesh</option>
+                    <option value="Howrah">Howrah, West Bengal</option>
+                    <option value="Hubli">Hubli, Karnataka</option>
+                    <option value="Hyderabad">Hyderabad, Telangana</option>
+                    <option value="Indore">Indore, Madhya Pradesh</option>
+                    <option value="Jabalpur">Jabalpur, Madhya Pradesh</option>
+                    <option value="Jaipur">Jaipur, Rajasthan</option>
+                    <option value="Jammu">Jammu, Jammu and Kashmir</option>
+                    <option value="Jodhpur">Jodhpur, Rajasthan</option>
+                    <option value="Kalyan">Kalyan, Maharashtra</option>
+                    <option value="Kanpur">Kanpur, Uttar Pradesh</option>
+                    <option value="Kolkata">Kolkata, West Bengal</option>
+                    <option value="Kota">Kota, Rajasthan</option>
+                    <option value="Lucknow">Lucknow, Uttar Pradesh</option>
+                    <option value="Ludhiana">Ludhiana, Punjab</option>
+                    <option value="Madurai">Madurai, Tamil Nadu</option>
+                    <option value="Moradabad">Moradabad, Uttar Pradesh</option>
+                    <option value="Mumbai">Mumbai, Maharashtra</option>
+                    <option value="Mysore">Mysore, Karnataka</option>
+                    <option value="Nagpur">Nagpur, Maharashtra</option>
+                    <option value="Nashik">Nashik, Maharashtra</option>
+                    <option value="Navi Mumbai">Navi Mumbai, Maharashtra</option>
+                    <option value="Noida">Noida, Uttar Pradesh</option>
+                    <option value="Patna">Patna, Bihar</option>
+                    <option value="Patiala">Patiala, Punjab</option>
+                    <option value="Pune">Pune, Maharashtra</option>
+                    <option value="Raipur">Raipur, Chhattisgarh</option>
+                    <option value="Rajkot">Rajkot, Gujarat</option>
+                    <option value="Ranchi">Ranchi, Jharkhand</option>
+                    <option value="Salem">Salem, Tamil Nadu</option>
+                    <option value="Shimla">Shimla, Himachal Pradesh</option>
+                    <option value="Siliguri">Siliguri, West Bengal</option>
+                    <option value="Solapur">Solapur, Maharashtra</option>
+                    <option value="Surat">Surat, Gujarat</option>
+                    <option value="Thane">Thane, Maharashtra</option>
+                    <option value="Tiruchirappalli">Tiruchirappalli, Tamil Nadu</option>
+                    <option value="Trivandrum">Trivandrum, Kerala</option>
+                    <option value="Vadodara">Vadodara, Gujarat</option>
+                    <option value="Varanasi">Varanasi, Uttar Pradesh</option>
+                    <option value="Vijayawada">Vijayawada, Andhra Pradesh</option>
+                    <option value="Visakhapatnam">Visakhapatnam, Andhra Pradesh</option>
+                    <option value="Warangal">Warangal, Telangana</option>
+                </select>
+            </div>
+            
+            <button class="location-btn" onclick="getCurrentLocation()">Use My Location</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px;">Getting weather data...</p>
+        </div>
+
+        <div class="error" id="error">
+            <p id="errorMessage"></p>
+        </div>
+
+        <div class="weather-display" id="weatherDisplay">
+            <div class="location-name" id="locationName"></div>
+            <div class="temperature" id="temperature"></div>
+            <div class="description" id="description"></div>
+            
+            <div class="weather-details">
+                <div class="detail-item">
+                    <div class="detail-label">Feels like</div>
+                    <div class="detail-value" id="feelsLike"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Humidity</div>
+                    <div class="detail-value" id="humidity"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Wind Speed</div>
+                    <div class="detail-value" id="windSpeed"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Pressure</div>
+                    <div class="detail-value" id="pressure"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'demo'; 
+        const API_BASE = 'https://api.openweathermap.org/data/2.5/weather';
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('weatherDisplay').classList.remove('show');
+            document.getElementById('error').classList.remove('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('error').classList.add('show');
+            document.getElementById('weatherDisplay').classList.remove('show');
+            hideLoading();
+        }
+
+        function displayWeather(data) {
+            document.getElementById('locationName').textContent = `${data.name}, ${data.sys.country}`;
+            document.getElementById('temperature').textContent = `${Math.round(data.main.temp)}°C`;
+            document.getElementById('description').textContent = data.weather[0].description;
+            document.getElementById('feelsLike').textContent = `${Math.round(data.main.feels_like)}°C`;
+            document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+            document.getElementById('windSpeed').textContent = `${data.wind.speed} m/s`;
+            document.getElementById('pressure').textContent = `${data.main.pressure} hPa`;
+            
+            document.getElementById('weatherDisplay').classList.add('show');
+            document.getElementById('error').classList.remove('show');
+            hideLoading();
+        }
+
+        const demoWeatherData = {
+            'Mumbai': { name: "Mumbai", sys: { country: "IN" }, main: { temp: 29, feels_like: 33, humidity: 82, pressure: 1010 }, weather: [{ description: "scattered thunderstorms" }], wind: { speed: 3.5 } },
+            'Delhi': { name: "New Delhi", sys: { country: "IN" }, main: { temp: 35, feels_like: 41, humidity: 65, pressure: 1005 }, weather: [{ description: "hot and hazy" }], wind: { speed: 2.8 } },
+            'Bangalore': { name: "Bangalore", sys: { country: "IN" }, main: { temp: 24, feels_like: 26, humidity: 70, pressure: 1015 }, weather: [{ description: "partly cloudy" }], wind: { speed: 1.9 } },
+            'Chennai': { name: "Chennai", sys: { country: "IN" }, main: { temp: 31, feels_like: 37, humidity: 79, pressure: 1009 }, weather: [{ description: "humid and warm" }], wind: { speed: 4.2 } },
+            'Kolkata': { name: "Kolkata", sys: { country: "IN" }, main: { temp: 33, feels_like: 38, humidity: 81, pressure: 1007 }, weather: [{ description: "muggy conditions" }], wind: { speed: 2.3 } },
+            'Hyderabad': { name: "Hyderabad", sys: { country: "IN" }, main: { temp: 28, feels_like: 32, humidity: 68, pressure: 1012 }, weather: [{ description: "clear sky" }], wind: { speed: 2.1 } },
+            'Pune': { name: "Pune", sys: { country: "IN" }, main: { temp: 26, feels_like: 29, humidity: 72, pressure: 1013 }, weather: [{ description: "pleasant weather" }], wind: { speed: 2.7 } },
+            'Jaipur': { name: "Jaipur", sys: { country: "IN" }, main: { temp: 37, feels_like: 43, humidity: 45, pressure: 1004 }, weather: [{ description: "dry and hot" }], wind: { speed: 3.1 } },
+            'Ahmedabad': { name: "Ahmedabad", sys: { country: "IN" }, main: { temp: 36, feels_like: 42, humidity: 58, pressure: 1006 }, weather: [{ description: "sunny and hot" }], wind: { speed: 2.9 } },
+            'Patna': { name: "Patna", sys: { country: "IN" }, main: { temp: 32, feels_like: 36, humidity: 78, pressure: 1008 }, weather: [{ description: "hazy sunshine" }], wind: { speed: 2.1 } },
+        };
+
+        async function fetchWeather(url) {
+            showLoading();
+            
+            try {
+               
+                let cityName = 'Patna'; 
+                if (url.includes('q=')) {
+                    const cityParam = url.split('q=')[1].split('&')[0];
+                    cityName = decodeURIComponent(cityParam);
+                }
+                
+ 
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const demoData = demoWeatherData[cityName] || demoWeatherData['Patna'];
+                
+                displayWeather(demoData);
+                
+            } catch (error) {
+                showError('Unable to fetch weather data. Please check your connection and try again.');
+            }
+        }
+
+        function searchWeather() {
+            const location = document.getElementById('locationInput').value.trim();
+            if (!location) {
+                showError('Please enter a city name');
+                return;
+            }
+            
+            document.getElementById('indianCities').value = '';
+            
+            const url = `${API_BASE}?q=${encodeURIComponent(location)}&appid=${API_KEY}&units=metric`;
+            fetchWeather(url);
+        }
+
+        function selectIndianCity() {
+            const select = document.getElementById('indianCities');
+            const selectedCity = select.value;
+            
+            if (selectedCity) {
+       
+                document.getElementById('locationInput').value = '';
+                
+                const url = `${API_BASE}?q=${encodeURIComponent(selectedCity)}&appid=${API_KEY}&units=metric`;
+                fetchWeather(url);
+            }
+        }
+
+        function getCurrentLocation() {
+            if (!navigator.geolocation) {
+                showError('Geolocation is not supported by this browser');
+                return;
+            }
+
+            showLoading();
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const url = `${API_BASE}?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+                    fetchWeather(url);
+                },
+                (error) => {
+                    let message = 'Unable to get your location. ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            message += 'Please allow location access.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            message += 'Location information unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            message += 'Location request timed out.';
+                            break;
+                        default:
+                            message += 'An unknown error occurred.';
+                            break;
+                    }
+                    showError(message);
+                }
+            );
+        }
+
+    
+        document.getElementById('locationInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchWeather();
+            }
+        });
+
+   
+        window.addEventListener('load', function() {
+       
+            setTimeout(() => {
+                fetchWeather('demo');
+            }, 500);
+        });
+    </script>
+</body>
+</html>
